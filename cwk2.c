@@ -39,6 +39,7 @@ int main( int argc, char **argv )
     MPI_Comm_size( MPI_COMM_WORLD, &numProcs );
     MPI_Comm_rank( MPI_COMM_WORLD, &rank     );
 
+
     // Check that the number of processes is a power of 2, but <=256, so the data set, which is a multiple of 256 in length,
     // is also a multiple of the number of processes. If using OpenMPI, you may need to add the argument '--oversubscribe'
     // when launnching the executable, to allow more processes than you have cores.
@@ -79,11 +80,19 @@ int main( int argc, char **argv )
     // Task 1: Calculate the mean using all available processes.
     //
 
-
+    float *localData = 0;
+        //broadcasting to all processes
+        MPI_Bcast( &globalData , 1 , MPI_FLOAT , 0 , MPI_COMM_WORLD);
+        //scattering
+        MPI_Scatter( globalData , localSize , MPI_FLOAT,
+                     localData, localSize , MPI_FLOAT ,
+                      0, MPI_COMM_WORLD);
+        //reduce to global mean
+    
     //
     // Task 2. Calculate the variance using all processes.
     //
-
+    
 
     //
     // Output the results alongside a serial check.

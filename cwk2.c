@@ -82,9 +82,9 @@ int main( int argc, char **argv )
 
         //broadcasting to all processes
         MPI_Bcast( &localSize , 1 , MPI_INT , 0 , MPI_COMM_WORLD);
+
         //scattering
         float *localData = (float*)malloc(localSize * sizeof(float));
-
         MPI_Scatter( globalData , localSize , MPI_FLOAT,
                      localData, localSize , MPI_FLOAT ,
                       0, MPI_COMM_WORLD);
@@ -112,7 +112,33 @@ int main( int argc, char **argv )
     //
     // Task 2. Calculate the variance using all processes.
     //
+         MPI_Bcast( &localSize , 1 , MPI_INT , 0 , MPI_COMM_WORLD);
+
+        float *localDataforVariance = (float*)malloc(localSize * sizeof(float));
+
+        //scattering
+        MPI_Scatter( globalData , localSize , MPI_FLOAT,
+                     localDataforVariance, localSize , MPI_FLOAT ,
+                      0, MPI_COMM_WORLD);
+
+        //calculation        
+        float parallelSumSqrd = 0.0;
+        for (int i = 0; i < localSize; i++)
+        {
+            parallelSumSqrd += ( localData[i] - parallelMean )*( localData[i]- parallelMean);
+            // printf("%g \n", parallelSumSqrd);
+        }
         
+        //reduce to global variance
+        float totalParallelSumSqrd;
+        MPI_Reduce(&parallelSumSqrd, &totalParallelSumSqrd, 1,
+                     MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD );
+
+        if (rank == 0)
+        {
+            free(localDataforVariance);
+        }
+        float parallelVariance = (parallelSumSqrd/globalSize);
 
     //
     // Output the results alongside a serial check.
@@ -125,7 +151,7 @@ int main( int argc, char **argv )
         // Your code MUST call this function after the mean and variance have been calculated using your parallel algorithms.
         // Do not modify the function itself (which is defined in 'cwk2_extra.h'), as it will be replaced with a different
         // version for the purpose of assessing. Also, don't just put the values from serial calculations here or you will lose marks.
-        finalMeanAndVariance( parallelMean, 0.0 );
+        finalMeanAndVariance( parallelMean, parallelVariance);
             // You should replace the first argument with your mean, and the second with your variance.
 
         // Check the answers against the serial calculations. This also demonstrates how to perform the calculations

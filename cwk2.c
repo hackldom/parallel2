@@ -79,20 +79,37 @@ int main( int argc, char **argv )
     //
     // Task 1: Calculate the mean using all available processes.
     //
+    // float *localData = malloc(sizeof(float) * localSize);
 
-    float *localData = 0;
+
         //broadcasting to all processes
-        MPI_Bcast( &globalData , 1 , MPI_FLOAT , 0 , MPI_COMM_WORLD);
+        MPI_Bcast( &localSize , 1 , MPI_INT , 0 , MPI_COMM_WORLD);
         //scattering
+        float *localData = (float*)malloc(localSize * sizeof(float));
+
         MPI_Scatter( globalData , localSize , MPI_FLOAT,
                      localData, localSize , MPI_FLOAT ,
                       0, MPI_COMM_WORLD);
+                    
+        float parallelSum = 0;
+        for (int i = 0; i < localSize; i++)
+        {
+            parallelSum += localData[i];
+            // printf("%g \n", parallelSum);
+        }
+        
         //reduce to global mean
-    
+        float totalParallelSum;
+        MPI_Reduce(&parallelSum, &totalParallelSum, 1,
+                     MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD );
+        printf("The total sum is %g \n", totalParallelSum);
+        printf("The global size is %d \n", globalSize);
+        float parallelMean = totalParallelSum/globalSize;
+
     //
     // Task 2. Calculate the variance using all processes.
     //
-    
+        
 
     //
     // Output the results alongside a serial check.
